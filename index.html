@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>Prasa Train Times | Soweto Lines</title>
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#2563eb">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Prasa Trains">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@500&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --blue: #2563eb;
+      --blue-light: #eff6ff;
+      --blue-mid: #bfdbfe;
+      --blue-dark: #1d4ed8;
+      --grey-bg: #f5f6f8;
+      --grey-border: #e2e5eb;
+      --grey-text: #6b7280;
+      --text: #111827;
+      --white: #ffffff;
+      --amber-light: #fffbeb;
+      --radius: 16px;
+      --radius-sm: 10px;
+    }
+
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--grey-bg);
+      color: var(--text);
+      min-height: 100vh;
+      padding: 20px 16px 48px;
+    }
+
+    .shell { max-width: 480px; margin: 0 auto; }
+
+    .header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 24px;
+      padding: 0 4px;
+    }
+    .header-icon {
+      width: 44px; height: 44px;
+      background: var(--blue);
+      border-radius: 12px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 22px; flex-shrink: 0;
+    }
+    .header-text h1 { font-size: 1.15rem; font-weight: 600; color: var(--text); line-height: 1.2; }
+    .header-text p { font-size: 0.78rem; color: var(--grey-text); margin-top: 2px; }
+
+    .offline-badge {
+      background: #fee2e2; color: #b91c1c;
+      border-radius: 20px; padding: 5px 12px;
+      font-size: 0.75rem; font-weight: 500;
+      display: none; margin-bottom: 16px; text-align: center;
+    }
+
+    .card {
+      background: var(--white);
+      border-radius: var(--radius);
+      border: 1px solid var(--grey-border);
+      padding: 20px; margin-bottom: 14px;
+    }
+
+    .field + .field { margin-top: 14px; }
+    .field label {
+      display: block; font-size: 0.78rem; font-weight: 600;
+      color: var(--grey-text); text-transform: uppercase;
+      letter-spacing: 0.05em; margin-bottom: 6px;
+    }
+    select {
+      width: 100%; padding: 12px 14px;
+      font-size: 0.95rem; font-family: 'DM Sans', sans-serif;
+      border-radius: var(--radius-sm);
+      border: 1.5px solid var(--grey-border);
+      background: var(--grey-bg); color: var(--text);
+      appearance: none; -webkit-appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='none' viewBox='0 0 24 24'%3E%3Cpath stroke='%236b7280' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+      background-repeat: no-repeat; background-position: right 12px center;
+      cursor: pointer; transition: border-color 0.15s;
+    }
+    select:focus { outline: none; border-color: var(--blue); }
+
+    .swap-row { display: flex; justify-content: center; margin: 4px 0; }
+    .swap-btn {
+      background: var(--grey-bg); border: 1.5px solid var(--grey-border);
+      border-radius: 50%; width: 34px; height: 34px;
+      cursor: pointer; display: flex; align-items: center; justify-content: center;
+      font-size: 16px; transition: background 0.15s, transform 0.2s; color: var(--grey-text);
+    }
+    .swap-btn:active { transform: rotate(180deg); background: var(--blue-mid); }
+
+    .find-btn {
+      width: 100%; padding: 14px;
+      background: var(--blue); color: white;
+      font-family: 'DM Sans', sans-serif; font-size: 0.95rem; font-weight: 600;
+      border: none; border-radius: var(--radius-sm);
+      cursor: pointer; margin-top: 16px;
+      transition: background 0.15s, transform 0.1s;
+    }
+    .find-btn:active { background: var(--blue-dark); transform: scale(0.985); }
+
+    .result-card {
+      background: var(--white); border-radius: var(--radius);
+      border: 1px solid var(--grey-border); margin-bottom: 14px; overflow: hidden;
+    }
+    .result-header {
+      background: var(--blue-light); border-bottom: 1px solid var(--blue-mid);
+      padding: 16px 20px 14px;
+    }
+    .result-tag { font-size: 0.72rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.07em; color: var(--blue); margin-bottom: 6px; }
+    .result-countdown { font-family: 'DM Mono', monospace; font-size: 2.6rem; font-weight: 500; color: var(--blue); line-height: 1; }
+    .result-body { padding: 16px 20px; }
+    .result-row {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 7px 0; border-bottom: 1px solid var(--grey-border);
+    }
+    .result-row:last-child { border-bottom: none; }
+    .result-row .label { font-size: 0.82rem; color: var(--grey-text); }
+    .result-row .value { font-size: 0.92rem; font-weight: 600; color: var(--text); }
+
+    .transfer-badge {
+      display: inline-flex; align-items: center; gap: 5px;
+      background: var(--amber-light); color: #92400e;
+      border: 1px solid #fde68a; border-radius: 20px;
+      padding: 4px 10px; font-size: 0.75rem; font-weight: 600; margin-bottom: 12px;
+    }
+
+    .empty-state { padding: 28px 20px; text-align: center; color: var(--grey-text); font-size: 0.9rem; }
+    .empty-state .icon { font-size: 2rem; margin-bottom: 8px; }
+
+    .trains-panel {
+      background: var(--white); border-radius: var(--radius);
+      border: 1px solid var(--grey-border); margin-bottom: 14px; overflow: hidden;
+    }
+    .trains-panel-header {
+      padding: 14px 20px 12px; border-bottom: 1px solid var(--grey-border);
+      display: flex; justify-content: space-between; align-items: center;
+    }
+    .trains-panel-header span {
+      font-size: 0.82rem; font-weight: 600; color: var(--grey-text);
+      text-transform: uppercase; letter-spacing: 0.05em;
+    }
+    .close-btn {
+      background: none; border: none; font-size: 0.8rem; color: var(--blue);
+      cursor: pointer; font-family: 'DM Sans', sans-serif; font-weight: 500; padding: 0;
+    }
+
+    .train-row {
+      display: flex; align-items: center; padding: 11px 20px;
+      border-bottom: 1px solid var(--grey-border); gap: 10px;
+      cursor: pointer; transition: background 0.1s;
+    }
+    .train-row:last-child { border-bottom: none; }
+    .train-row:hover { background: var(--grey-bg); }
+    .train-row.selected { background: var(--blue-light); }
+
+    .train-no {
+      font-family: 'DM Mono', monospace; font-size: 0.75rem; font-weight: 500;
+      background: var(--grey-bg); border: 1px solid var(--grey-border);
+      border-radius: 6px; padding: 2px 7px; color: var(--grey-text); white-space: nowrap;
+    }
+    .train-row.selected .train-no { background: var(--blue-mid); border-color: var(--blue-mid); color: var(--blue-dark); }
+
+    .train-times {
+      flex: 1; display: flex; gap: 6px; align-items: center;
+      font-size: 0.9rem; font-weight: 500;
+    }
+    .train-times .arr { color: var(--grey-text); font-weight: 400; }
+    .train-times .arrow { color: var(--grey-border); font-size: 0.8rem; }
+
+    .train-eta { font-size: 0.78rem; color: var(--grey-text); text-align: right; white-space: nowrap; }
+    .train-row.selected .train-eta { color: var(--blue); font-weight: 600; }
+    .train-row.past .train-times { opacity: 0.45; }
+
+    .warn-card {
+      background: var(--amber-light); border: 1px solid #fde68a;
+      border-radius: var(--radius); padding: 16px 20px; margin-bottom: 14px;
+      font-size: 0.88rem; color: #78350f;
+    }
+    .warn-card strong { display: block; margin-bottom: 4px; font-size: 0.9rem; }
+
+    footer { text-align: center; font-size: 0.72rem; color: #9ca3af; margin-top: 8px; }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --grey-bg: #1a1d23; --grey-border: #2d3140; --grey-text: #8b93a8;
+        --text: #edf0f7; --white: #22263a; --blue-light: #1e2a45;
+        --blue-mid: #1e3a7a; --amber-light: #2d200a;
+      }
+      select { color: var(--text); }
+    }
+  </style>
+</head>
+<body>
+<div class="shell">
+
+  <div class="header">
+    <div class="header-icon">🚆</div>
+    <div class="header-text">
+      <h1>PRASA Train Times</h1>
+      <p>Soweto lines &middot; Weekdays</p>
+    </div>
+  </div>
+
+  <div id="offlineIndicator" class="offline-badge">⚠️ Offline mode</div>
+
+  <div class="card">
+    <div class="field">
+      <label>From</label>
+      <select id="originSelect"></select>
+    </div>
+    <div class="swap-row">
+      <button class="swap-btn" id="swapBtn" title="Swap stations">⇅</button>
+    </div>
+    <div class="field">
+      <label>To</label>
+      <select id="destSelect"></select>
+    </div>
+    <button class="find-btn" id="findBtn">Show my next train</button>
+  </div>
+
+  <div id="resultArea"></div>
+  <div id="trainsPanel"></div>
+
+  <footer>Offline ready &nbsp;&middot;&nbsp; Add to Home Screen to install</footer>
+</div>
+
+<script>
+const SCHEDULE_DATA = {
+  lines: {
+    midway_joburg: {
+      direction_inbound: {
+        stations: ["Midway","Tshiawelo","Kliptown","Nancefield","Orlando","Mlamlankunzi","New Canada","Longdale","Croesus","Langlaagte","Grosvenor","Mayfair","Braamfontein","Johannesburg"],
+        trains: [
+          {trainNo:"9003",times:["04:30","04:35","04:42","04:48","04:53","04:56","05:01","05:07","05:10","05:16","05:21","05:24","05:28","05:35"]},
+          {trainNo:"9005",times:["07:00","07:05","07:12","07:18","07:23","07:26","07:31","07:37","07:40","07:46","07:51","07:54","07:58","08:05"]},
+          {trainNo:"9007",times:["09:30","09:35","09:42","09:48","09:53","09:56","10:01","10:07","10:10","10:16","10:21","10:24","10:28","10:35"]},
+          {trainNo:"9009",times:["12:30","12:35","12:42","12:48","12:53","12:56","13:01","13:07","13:10","13:16","13:21","13:24","13:28","13:35"]},
+          {trainNo:"9011",times:["15:15","15:20","15:27","15:33","15:38","15:41","15:46","15:52","15:55","16:01","16:06","16:09","16:13","16:20"]},
+          {trainNo:"9013",times:["17:45","17:50","17:56","18:02","18:06","18:09","18:13","18:20","18:22","18:28","18:32","18:35","18:39","18:45"]}
+        ]
+      },
+      direction_outbound: {
+        stations: ["Johannesburg","Braamfontein","Mayfair","Grosvenor","Langlaagte","Croesus","Longdale","New Canada","Mlamlankunzi","Orlando","Nancefield","Kliptown","Tshiawelo","Midway"],
+        trains: [
+          {trainNo:"9004",times:["05:45","05:53","05:59","06:02","06:06","06:11","06:14","06:21","06:25","06:30","06:35","06:41","06:46","06:50"]},
+          {trainNo:"9006",times:["08:15","08:23","08:29","08:32","08:36","08:41","08:44","08:51","08:55","09:00","09:05","09:11","09:16","09:20"]},
+          {trainNo:"9008",times:["11:00","11:08","11:14","11:17","11:21","11:26","11:29","11:36","11:40","11:45","11:50","11:56","12:01","12:05"]},
+          {trainNo:"9010",times:["14:00","14:08","14:14","14:17","14:21","14:26","14:29","14:36","14:40","14:45","14:50","14:56","15:01","15:05"]},
+          {trainNo:"9012",times:["16:30","16:38","16:44","16:47","16:51","16:56","16:59","17:06","17:10","17:15","17:20","17:26","17:31","17:35"]},
+          {trainNo:"9014",times:["19:10","19:18","19:24","19:27","19:31","19:36","19:39","19:46","19:50","19:55","20:00","20:06","20:11","20:15"]}
+        ]
+      }
+    },
+    naledi_joburg: {
+      direction_inbound: {
+        stations: ["Naledi","Merafe","Inhlazane","Ikwezi","Dube","Phefen","Phomolong","Mzimhlope","New Canada","Longdale","Croesus","Langlaagte","Grosvenor","Mayfair","Braamfontein","Johannesburg"],
+        trains: [
+          {trainNo:"9301",times:["04:20","04:23","04:28","04:33","04:37","04:39","04:41","04:43","04:46","04:51","04:53","04:57","05:00","05:02","05:05","05:10"]},
+          {trainNo:"9303",times:["05:00","05:03","05:08","05:13","05:17","05:19","05:21","05:23","05:26","05:31","05:33","05:37","05:40","05:42","05:45","05:50"]},
+          {trainNo:"9305",times:["05:30","05:33","05:38","05:43","05:47","05:49","05:51","05:53","05:56","06:01","06:03","06:07","06:10","06:12","06:15","06:20"]},
+          {trainNo:"9307",times:["06:15","06:18","06:23","06:28","06:32","06:34","06:36","06:38","06:41","06:46","06:48","06:52","06:55","06:57","07:00","07:05"]},
+          {trainNo:"9309",times:["07:30","07:33","07:38","07:43","07:47","07:49","07:51","07:53","07:56","08:01","08:03","08:07","08:10","08:12","08:15","08:20"]},
+          {trainNo:"9311",times:["08:50","08:53","08:58","09:03","09:07","09:09","09:11","09:13","09:16","09:21","09:23","09:27","09:30","09:32","09:35","09:40"]},
+          {trainNo:"9313",times:["09:50","09:53","09:58","10:03","10:07","10:09","10:11","10:13","10:16","10:21","10:23","10:27","10:30","10:32","10:35","10:40"]},
+          {trainNo:"9315",times:["10:50","10:53","10:58","11:03","11:07","11:09","11:11","11:13","11:16","11:21","11:23","11:27","11:30","11:32","11:35","11:40"]},
+          {trainNo:"9317",times:["11:50","11:53","11:58","12:03","12:07","12:09","12:11","12:13","12:16","12:21","12:23","12:27","12:30","12:32","12:35","12:40"]},
+          {trainNo:"9321",times:["12:50","12:53","12:58","13:03","13:07","13:09","13:11","13:13","13:16","13:21","13:23","13:27","13:30","13:32","13:35","13:40"]},
+          {trainNo:"9323",times:["13:50","13:53","13:58","14:03","14:07","14:09","14:11","14:13","14:16","14:21","14:23","14:27","14:30","14:32","14:35","14:40"]},
+          {trainNo:"9325",times:["14:50","14:53","14:58","15:03","15:07","15:09","15:11","15:13","15:16","15:21","15:23","15:27","15:30","15:32","15:35","15:40"]},
+          {trainNo:"9327",times:["16:10","16:13","16:18","16:23","16:27","16:29","16:31","16:33","16:36","16:41","16:43","16:47","16:50","16:52","16:55","17:00"]},
+          {trainNo:"9329",times:["18:00","18:03","18:08","18:13","18:17","18:19","18:21","18:23","18:26","18:31","18:33","18:37","18:40","18:42","18:45","18:50"]}
+        ]
+      },
+      direction_outbound: {
+        stations: ["Johannesburg","Braamfontein","Mayfair","Grosvenor","Langlaagte","Croesus","Longdale","New Canada","Mzimhlope","Phomolong","Phefen","Dube","Ikwezi","Inhlazane","Merafe","Naledi"],
+        trains: [
+          {trainNo:"9306",times:["06:30","06:34","06:38","06:40","06:43","06:46","06:48","06:53","06:56","06:59","07:01","07:03","07:07","07:11","07:16","07:20"]},
+          {trainNo:"9308",times:["07:30","07:34","07:38","07:40","07:43","07:46","07:48","07:53","07:56","07:59","08:01","08:03","08:07","08:11","08:16","08:20"]},
+          {trainNo:"9310",times:["08:50","08:54","08:58","09:00","09:03","09:06","09:08","09:13","09:16","09:19","09:21","09:23","09:27","09:31","09:36","09:40"]},
+          {trainNo:"9312",times:["09:50","09:54","09:58","10:00","10:03","10:06","10:08","10:13","10:16","10:19","10:21","10:23","10:27","10:31","10:36","10:40"]},
+          {trainNo:"9314",times:["10:50","10:54","10:58","11:00","11:03","11:06","11:08","11:13","11:16","11:19","11:21","11:23","11:27","11:31","11:36","11:40"]},
+          {trainNo:"9316",times:["11:50","11:54","11:58","12:00","12:03","12:06","12:08","12:13","12:16","12:19","12:21","12:23","12:27","12:31","12:36","12:40"]},
+          {trainNo:"9318",times:["12:50","12:54","12:58","13:00","13:03","13:06","13:08","13:13","13:16","13:19","13:21","13:23","13:27","13:31","13:36","13:40"]},
+          {trainNo:"9322",times:["13:50","13:54","13:58","14:00","14:03","14:06","14:08","14:13","14:16","14:19","14:21","14:23","14:27","14:31","14:36","14:40"]},
+          {trainNo:"9324",times:["15:10","15:14","15:18","15:20","15:23","15:26","15:28","15:33","15:36","15:39","15:41","15:43","15:47","15:51","15:56","16:00"]},
+          {trainNo:"9326",times:["16:30","16:34","16:38","16:40","16:43","16:46","16:48","16:53","16:56","16:59","17:01","17:03","17:07","17:11","17:16","17:20"]},
+          {trainNo:"9328",times:["17:30","17:34","17:38","17:40","17:43","17:46","17:48","17:53","17:56","17:59","18:01","18:03","18:07","18:11","18:16","18:20"]},
+          {trainNo:"9332",times:["18:30","18:34","18:38","18:40","18:43","18:46","18:48","18:53","18:56","18:59","19:01","19:03","19:07","19:11","19:16","19:20"]},
+          {trainNo:"9334",times:["19:20","19:24","19:28","19:30","19:33","19:36","19:38","19:43","19:46","19:49","19:51","19:53","19:57","20:01","20:06","20:10"]}
+        ]
+      }
+    }
+  }
+};
+
+const originSelect = document.getElementById('originSelect');
+const destSelect = document.getElementById('destSelect');
+const findBtn = document.getElementById('findBtn');
+const resultArea = document.getElementById('resultArea');
+const trainsPanelEl = document.getElementById('trainsPanel');
+
+function buildStationList() {
+  const s = new Set();
+  for (const line of Object.values(SCHEDULE_DATA.lines))
+    for (const dir of Object.values(line))
+      dir.stations.forEach(st => s.add(st));
+  return Array.from(s).sort();
+}
+
+function populateSelectors() {
+  const stations = buildStationList();
+  originSelect.innerHTML = '<option value="">Select departure station</option>';
+  destSelect.innerHTML = '<option value="">Select arrival station</option>';
+  stations.forEach(st => {
+    originSelect.add(new Option(st, st));
+    destSelect.add(new Option(st, st));
+  });
+}
+
+function toMins(t) { const [h,m] = t.split(':').map(Number); return h*60+m; }
+function nowMins() { const n = new Date(); return n.getHours()*60+n.getMinutes(); }
+
+function formatEta(t) {
+  const diff = toMins(t) - nowMins();
+  if (diff <= 0) return 'due now';
+  if (diff < 60) return 'in ' + diff + ' min';
+  const h = Math.floor(diff/60), m = diff%60;
+  return m === 0 ? 'in ' + h + 'h' : 'in ' + h + 'h ' + m + 'm';
+}
+
+function findAllDirectJourneys(origin, dest) {
+  const results = [];
+  for (const lineData of Object.values(SCHEDULE_DATA.lines)) {
+    for (const dirObj of Object.values(lineData)) {
+      const oi = dirObj.stations.indexOf(origin);
+      const di = dirObj.stations.indexOf(dest);
+      if (oi !== -1 && di !== -1 && oi < di) {
+        for (const train of dirObj.trains) {
+          results.push({ type:'direct', trainNo:train.trainNo, departTime:train.times[oi], arrivalTime:train.times[di], origin, dest });
+        }
+      }
+    }
+  }
+  return results.sort((a,b) => toMins(a.departTime)-toMins(b.departTime));
+}
+
+function findAllTransferJourneys(origin, dest) {
+  const leg1s = [];
+  for (const lineData of Object.values(SCHEDULE_DATA.lines)) {
+    for (const dirObj of Object.values(lineData)) {
+      const oi = dirObj.stations.indexOf(origin);
+      const ni = dirObj.stations.indexOf('New Canada');
+      if (oi !== -1 && ni !== -1 && oi < ni) {
+        for (const train of dirObj.trains)
+          leg1s.push({ trainNo:train.trainNo, departTime:train.times[oi], arrivalAtNC:train.times[ni] });
+      }
+    }
+  }
+  const results = [];
+  for (const leg1 of leg1s) {
+    const arrMins = toMins(leg1.arrivalAtNC);
+    for (const lineData of Object.values(SCHEDULE_DATA.lines)) {
+      for (const dirObj of Object.values(lineData)) {
+        const ni = dirObj.stations.indexOf('New Canada');
+        const di = dirObj.stations.indexOf(dest);
+        if (ni !== -1 && di !== -1 && ni < di) {
+          for (const train of dirObj.trains) {
+            if (toMins(train.times[ni]) >= arrMins + 1) {
+              results.push({
+                type:'transfer',
+                trainNo: leg1.trainNo + '+' + train.trainNo,
+                departTime: leg1.departTime,
+                arrivalTime: train.times[di],
+                leg1: { trainNo:leg1.trainNo, departTime:leg1.departTime, arrivalAtNC:leg1.arrivalAtNC },
+                leg2: { trainNo:train.trainNo, departFromNC:train.times[ni], arrivalTime:train.times[di] },
+                origin, dest
+              });
+              break;
+            }
+          }
+        }
+      }
+    }
+  }
+  return results.sort((a,b) => toMins(a.departTime)-toMins(b.departTime));
+}
+
+function getAllJourneys(origin, dest) {
+  if (!origin || !dest || origin === dest) return [];
+  const direct = findAllDirectJourneys(origin, dest);
+  return direct.length ? direct : findAllTransferJourneys(origin, dest);
+}
+
+function findNextIdx(journeys) {
+  const now = nowMins();
+  for (let i = 0; i < journeys.length; i++)
+    if (toMins(journeys[i].departTime) >= now) return i;
+  return journeys.length - 1;
+}
+
+let allJourneys = [];
+let selectedIdx = 0;
+
+function renderResult(j) {
+  if (!j) { resultArea.innerHTML = `<div class="result-card"><div class="empty-state"><div class="icon">🚫</div>No more trains today on this route.</div></div>`; return; }
+  const eta = formatEta(j.departTime);
+  if (j.type === 'direct') {
+    resultArea.innerHTML = `<div class="result-card">
+      <div class="result-header">
+        <div class="result-tag">Direct &middot; Train ${j.trainNo}</div>
+        <div class="result-countdown">${eta}</div>
+      </div>
+      <div class="result-body">
+        <div class="result-row"><span class="label">Departs ${j.origin}</span><span class="value">${j.departTime}</span></div>
+        <div class="result-row"><span class="label">Arrives ${j.dest}</span><span class="value">${j.arrivalTime}</span></div>
+      </div>
+    </div>`;
+  } else {
+    resultArea.innerHTML = `<div class="result-card">
+      <div class="result-header">
+        <div class="result-tag">Transfer route</div>
+        <div class="result-countdown">${eta}</div>
+      </div>
+      <div class="result-body">
+        <div class="transfer-badge">🔄 Change at New Canada</div>
+        <div class="result-row"><span class="label">Train ${j.leg1.trainNo} departs ${j.origin}</span><span class="value">${j.leg1.departTime}</span></div>
+        <div class="result-row"><span class="label">Arrives New Canada</span><span class="value">${j.leg1.arrivalAtNC}</span></div>
+        <div class="result-row"><span class="label">Train ${j.leg2.trainNo} departs New Canada</span><span class="value">${j.leg2.departFromNC}</span></div>
+        <div class="result-row"><span class="label">Arrives ${j.dest}</span><span class="value">${j.leg2.arrivalTime}</span></div>
+      </div>
+    </div>`;
+  }
+}
+
+function renderTrainsPanel(journeys, selIdx) {
+  if (!journeys.length) { trainsPanelEl.innerHTML = ''; return; }
+  const now = nowMins();
+  let html = `<div class="trains-panel">
+    <div class="trains-panel-header">
+      <span>All trains today</span>
+      <button class="close-btn" onclick="trainsPanelEl.innerHTML=''">Close</button>
+    </div>`;
+  journeys.forEach((j, i) => {
+    const past = toMins(j.departTime) < now;
+    const sel = i === selIdx;
+    const eta = past ? '<span style="color:#9ca3af;font-style:italic">departed</span>' : formatEta(j.departTime);
+    const tn = j.type === 'transfer' ? j.leg1.trainNo + ' + ' + j.leg2.trainNo : j.trainNo;
+    html += `<div class="train-row${sel?' selected':''}${past?' past':''}" onclick="selectTrain(${i})">
+      <span class="train-no">${tn}</span>
+      <span class="train-times">${j.departTime} <span class="arrow">&#8594;</span> <span class="arr">${j.arrivalTime}</span></span>
+      <span class="train-eta">${eta}</span>
+    </div>`;
+  });
+  html += '</div>';
+  trainsPanelEl.innerHTML = html;
+}
+
+function selectTrain(idx) {
+  selectedIdx = idx;
+  renderResult(allJourneys[idx]);
+  renderTrainsPanel(allJourneys, idx);
+}
+
+findBtn.addEventListener('click', () => {
+  const origin = originSelect.value;
+  const dest = destSelect.value;
+  if (!origin || !dest) {
+    resultArea.innerHTML = `<div class="result-card"><div class="empty-state"><div class="icon">📍</div>Please select both stations.</div></div>`;
+    trainsPanelEl.innerHTML = ''; return;
+  }
+  if (origin === dest) {
+    resultArea.innerHTML = `<div class="result-card"><div class="empty-state"><div class="icon">🤔</div>Origin and destination are the same.</div></div>`;
+    trainsPanelEl.innerHTML = ''; return;
+  }
+  allJourneys = getAllJourneys(origin, dest);
+  if (!allJourneys.length) {
+    resultArea.innerHTML = `<div class="warn-card"><strong>No route found</strong>No direct or transfer route exists between these two stations.</div>`;
+    trainsPanelEl.innerHTML = ''; return;
+  }
+  selectedIdx = findNextIdx(allJourneys);
+  renderResult(allJourneys[selectedIdx]);
+  renderTrainsPanel(allJourneys, selectedIdx);
+});
+
+document.getElementById('swapBtn').addEventListener('click', () => {
+  const o = originSelect.value, d = destSelect.value;
+  originSelect.value = d; destSelect.value = o;
+});
+
+populateSelectors();
+
+if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(()=>{});
+
+window.addEventListener('load', () => {
+  const badge = document.getElementById('offlineIndicator');
+  if (!navigator.onLine) badge.style.display = 'block';
+  window.addEventListener('online', () => badge.style.display = 'none');
+  window.addEventListener('offline', () => badge.style.display = 'block');
+});
+</script>
+</body>
+</html>
